@@ -17,7 +17,7 @@ namespace Vignette.Camera.Platform
 
         protected override IEnumerable<CameraInfo> EnumerateAllDevices()
         {
-            for (int i = 0; i < Directory.EnumerateDirectories("/dev/").Count(); i++)
+            for (int i = 0; i < Directory.EnumerateDirectories(@"/dev/").Count(); i++)
             {
                 string path = $"/dev/video{i}";
 
@@ -26,7 +26,8 @@ namespace Vignette.Camera.Platform
 
                 if (File.Exists(friendlyNamePath))
                 {
-                    friendlyName = $"({i}) {File.ReadAllText(friendlyNamePath).TrimEnd('\n')}";
+                    using var reader = new StreamReader(File.OpenRead(friendlyNamePath));
+                    friendlyName = reader.ReadToEnd();
                 }
                 else
                 {

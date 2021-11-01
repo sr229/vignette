@@ -2,13 +2,11 @@
 // Licensed under MIT. See LICENSE for details.
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Emgu.CV;
-using Emgu.CV.CvEnum;
-using Emgu.CV.Util;
-using osu.Framework.Graphics.Primitives;
+using System.Threading;
+using System.Threading.Tasks;
+using OpenCvSharp;
 using osu.Framework.Logging;
+using osuTK;
 
 namespace Vignette.Camera
 {
@@ -17,15 +15,15 @@ namespace Vignette.Camera
     /// </summary>
     public abstract class Camera : IDisposable, ICamera
     {
-        public int Width => Capture.Width;
+        public float Width => (Capture.IsDisposed) ? 0 : Capture.FrameWidth;
 
-        public int Height => Capture.Height;
+        public float Height => (Capture.IsDisposed) ? 0 : Capture.FrameHeight;
 
-        public Vector2I Size => new Vector2I(Width, Height);
+        public Vector2 Size => new Vector2(Width, Height);
 
-        public double FramesPerSecond => Capture.Get(CapProp.Fps);
+        public double FramesPerSecond => (Capture.IsDisposed) ? 0 : Capture.Fps;
 
-        public IReadOnlyList<byte> Data => data;
+        public byte[] Data { get; private set; }
 
         /// <summary>
         /// Fired when a new update occurs. The frequency of invocations is tied to the <see cref="FramesPerSecond"/>.
@@ -47,17 +45,18 @@ namespace Vignette.Camera
 
         protected DecoderState State { get; private set; } = DecoderState.Ready;
 
-        public Mat Mat { get; private set; }
+        protected Mat Mat { get; private set; }
 
         private static Logger logger => Logger.GetLogger("performance-camera");
 
         private readonly EncodingFormat format;
-        private readonly Dictionary<ImwriteFlags, int> encodingParams;
-        private byte[] data;
+        private readonly ImageEncodingParam[] encodingParams;
+        private CancellationTokenSource decodingTaskCancellationToken;
+        private Task decodingTask;
 
         internal VideoCapture Capture;
 
-        public Camera(EncodingFormat format = EncodingFormat.PNG, Dictionary<ImwriteFlags, int> encodingParams = null)
+        public Camera(EncodingFormat format = EncodingFormat.PNG, ImageEncodingParam[] encodingParams = null)
         {
             this.format = format;
             this.encodingParams = encodingParams;
@@ -65,11 +64,14 @@ namespace Vignette.Camera
 
         public void Start()
         {
+            // throw if we encounter errors
+            Capture.SetExceptionMode(true);
+
             if (!Ready)
                 return;
 
-            Capture.ImageGrabbed += handleImageGrabbed;
-            Capture.Start();
+            decodingTaskCancellationToken = new CancellationTokenSource();
+            decodingTask = Task.Factory.StartNew(() => decodingLoop(decodingTaskCancellationToken), decodingTaskCancellationToken.Token, TaskCreationOptions.LongRunning, TaskScheduler.Default);
 
             State = DecoderState.Started;
         }
@@ -79,7 +81,6 @@ namespace Vignette.Camera
             if (Ready || Paused)
                 return;
 
-            Capture.Pause();
             State = DecoderState.Paused;
         }
 
@@ -88,47 +89,65 @@ namespace Vignette.Camera
             if (Ready || !Paused)
                 return;
 
-            Capture.Start();
             State = DecoderState.Started;
         }
 
-        public void Stop()
+        public void Stop(bool waitForDecoder)
         {
+            // The capture has a reference to the device or file even if decoding hasn't started yet.
+            Capture?.Release();
+
             if (Ready)
                 return;
 
+            decodingTaskCancellationToken.Cancel();
+            if (waitForDecoder)
+                decodingTask.Wait();
+
             OnTick = null;
+
+            decodingTask.Dispose();
+            decodingTask = null;
+
+            decodingTaskCancellationToken.Dispose();
+            decodingTaskCancellationToken = null;
 
             Capture?.Dispose();
 
             State = DecoderState.Stopped;
         }
 
-        private void handleImageGrabbed(object sender, EventArgs args)
+        private void decodingLoop(CancellationTokenSource token)
         {
-            PreTick();
-
-            try
+            while (true)
             {
-                Mat = new Mat();
+                if (token.IsCancellationRequested)
+                    break;
 
-                if (Capture.Retrieve(Mat))
+                PreTick();
+
+                if (Paused)
+                    continue;
+
+                try
                 {
-                    if (Mat.IsEmpty)
-                        return;
+                    // Don't do anything when there are no more frames or the device has been disconnected.
+                    if (!Capture.Grab())
+                        continue;
 
-                    using (var vector = new VectorOfByte())
-                    {
-                        CvInvoke.Imencode(getStringfromEncodingFormat(format), Mat, vector, encodingParams?.ToArray());
-                        data = vector.ToArray();
-                    }
+                    Mat = Capture.RetrieveMat();
+
+                    if (!Mat.Empty())
+                        Data = Mat.ToBytes(getStringfromEncodingFormat(format), encodingParams);
+
+                    OnTick?.Invoke();
+                }
+                catch (OpenCVException e)
+                {
+                    logger.Add($@"{e.Status} {e.ErrMsg}", LogLevel.Verbose, e);
                 }
 
-                OnTick?.Invoke();
-            }
-            catch (CvException e)
-            {
-                logger.Add($@"{e.Status} {e.Message}", osu.Framework.Logging.LogLevel.Verbose, e);
+                Thread.Sleep((int)Math.Round(1000 / Math.Max(FramesPerSecond, 1)));
             }
         }
 
@@ -141,7 +160,7 @@ namespace Vignette.Camera
             if (IsDisposed)
                 return;
 
-            Stop();
+            Stop(true);
 
             IsDisposed = true;
         }
@@ -157,7 +176,7 @@ namespace Vignette.Camera
             GC.SuppressFinalize(this);
         }
 
-        private static string getStringfromEncodingFormat(EncodingFormat format)
+        private string getStringfromEncodingFormat(EncodingFormat format)
         {
             switch (format)
             {

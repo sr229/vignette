@@ -1,6 +1,8 @@
 ﻿// Copyright 2020 - 2021 Vignette Project
 // Licensed under MIT. See LICENSE for details.
 
+using System.IO;
+
 namespace Vignette.Camera
 {
     /// <summary>
@@ -8,21 +10,21 @@ namespace Vignette.Camera
     /// </summary>
     public interface ICameraDevice
     {
-        double Saturation { get; set; }
+        float Saturation { get; set; }
 
-        double Contrast { get; set; }
+        float Contrast { get; set; }
 
-        double Exposure { get; set; }
+        float Exposure { get; set; }
 
-        double Gain { get; set; }
+        float Gain { get; set; }
 
-        double Hue { get; set; }
+        float Hue { get; set; }
 
-        double Focus { get; set; }
+        int Focus { get; set; }
 
-        double AutoExposure { get; set; }
+        bool AutoExposure { get; set; }
 
-        double AutoFocus { get; set; }
+        bool AutoFocus { get; set; }
 
         bool Record(string path);
 

@@ -6,62 +6,62 @@ namespace Vignette.Camera.Graphics
     /// <summary>
     /// A <see cref="CameraDevice"/> that can be added to the scene hierarchy.
     /// </summary>
-    public class DrawableCameraDevice : DrawableCameraWrapper<CameraDevice>, ICameraDevice
+    public class DrawableCameraDevice : DrawableCameraWrapper, ICameraDevice
     {
         /// <inheritdoc cref="CameraDevice.Saturation"/>
-        public double Saturation
+        public float Saturation
         {
-            get => Camera.Saturation;
-            set => Camera.Saturation = value;
+            get => ((CameraDevice)Camera).Saturation;
+            set => ((CameraDevice)Camera).Saturation = value;
         }
 
         /// <inheritdoc cref="CameraDevice.Contrast"/>
-        public double Contrast
+        public float Contrast
         {
-            get => Camera.Contrast;
-            set => Camera.Contrast = value;
+            get => ((CameraDevice)Camera).Contrast;
+            set => ((CameraDevice)Camera).Contrast = value;
         }
 
         /// <inheritdoc cref="CameraDevice.Exposure"/>
-        public double Exposure
+        public float Exposure
         {
-            get => Camera.Exposure;
-            set => Camera.Exposure = value;
+            get => ((CameraDevice)Camera).Exposure;
+            set => ((CameraDevice)Camera).Exposure = value;
         }
 
         /// <inheritdoc cref="CameraDevice.Gain"/>
-        public double Gain
+        public float Gain
         {
-            get => Camera.Gain;
-            set => Camera.Gain = value;
+            get => ((CameraDevice)Camera).Gain;
+            set => ((CameraDevice)Camera).Gain = value;
         }
 
         /// <inheritdoc cref="CameraDevice.Hue"/>
-        public double Hue
+        public float Hue
         {
-            get => Camera.Hue;
-            set => Camera.Hue = value;
+            get => ((CameraDevice)Camera).Hue;
+            set => ((CameraDevice)Camera).Hue = value;
         }
 
         /// <inheritdoc cref="CameraDevice.Focus"/>
-        public double Focus
+        public int Focus
         {
-            get => Camera.Focus;
-            set => Camera.Focus = value;
+            get => ((CameraDevice)Camera).Focus;
+            set => ((CameraDevice)Camera).Focus = value;
         }
 
         /// <inheritdoc cref="CameraDevice.AutoExposure"/>t
-        public double AutoExposure
+        public bool AutoExposure
         {
-            get => Camera.AutoExposure;
-            set => Camera.AutoExposure = value;
+            get => ((CameraDevice)Camera).AutoExposure;
+            set => ((CameraDevice)Camera).AutoExposure = value;
         }
 
         /// <inheritdoc cref="CameraDevice.AutoFocus"/>
-        public double AutoFocus
+        public bool AutoFocus
         {
-            get => Camera.AutoFocus;
-            set => Camera.AutoFocus = value;
+            get => ((CameraDevice)Camera).AutoFocus;
+            set => ((CameraDevice)Camera).AutoFocus = value;
         }
 
 
@@ -71,9 +71,9 @@ namespace Vignette.Camera.Graphics
         }
 
         /// <inheritdoc cref="CameraDevice.Record"/>
-        public bool Record(string path) => Camera.Record(path);
+        public bool Record(string path) => ((CameraDevice)Camera).Record(path);
 
         /// <inheritdoc cref="CameraDevice.Save"/>
-        public bool Save() => Camera.Save();
+        public bool Save() => ((CameraDevice)Camera).Save();
     }
 }

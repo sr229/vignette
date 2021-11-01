@@ -7,17 +7,17 @@ namespace Vignette.Camera.Graphics
     /// A <see cref="CameraVirtual"/> that can be added to the scene hierarchy.
     /// </summary>
     /// <remarks>The playback rate is unaffected by <see cref="Framework.Graphics.Drawable.Clock"/>.</remarks>
-    public class DrawableCameraVirtual : DrawableCameraWrapper<CameraVirtual>, ICameraVirtual
+    public class DrawableCameraVirtual : DrawableCameraWrapper, ICameraVirtual
     {
         /// <<inheritdoc cref="CameraVirtual.Loop"/>
         public bool Loop
         {
-            get => Camera.Loop;
-            set => Camera.Loop = value;
+            get => ((CameraVirtual)Camera).Loop;
+            set => ((CameraVirtual)Camera).Loop = value;
         }
 
         /// <<inheritdoc cref="CameraVirtual.FrameCount"/>
-        public int FrameCount => Camera.FrameCount;
+        public int FrameCount => ((CameraVirtual)Camera).FrameCount;
 
         public DrawableCameraVirtual(CameraVirtual camera, bool disposeUnderlyingCameraOnDispose = true)
             : base(camera, disposeUnderlyingCameraOnDispose)
@@ -25,9 +25,9 @@ namespace Vignette.Camera.Graphics
         }
 
         /// <<inheritdoc cref="CameraVirtual.Position"/>
-        int ICameraVirtual.Position => Camera.Position;
+        int ICameraVirtual.Position => ((CameraVirtual)Camera).Position;
 
         /// <<inheritdoc cref="CameraVirtual.Seek"/>
-        public void Seek(int frame) => Camera.Seek(frame);
+        public void Seek(int frame) => ((CameraVirtual)Camera).Seek(frame);
     }
 }

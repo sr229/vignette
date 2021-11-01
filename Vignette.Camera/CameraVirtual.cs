@@ -2,11 +2,8 @@
 // Licensed under MIT. See LICENSE for details.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using Emgu.CV;
-using Emgu.CV.CvEnum;
-using osu.Framework;
+using OpenCvSharp;
 
 namespace Vignette.Camera
 {
@@ -21,12 +18,12 @@ namespace Vignette.Camera
         /// <summary>
         /// The number of frames the playback has.
         /// </summary>
-        public int FrameCount => (int)Capture.Get(CapProp.FrameCount);
+        public int FrameCount => (Capture.IsDisposed) ? 0 : Capture.FrameCount;
 
         /// <summary>
         /// The current frame of the playback.
         /// </summary>
-        public int Position => (int)Capture.Get(CapProp.PosFrames);
+        public int Position => (Capture.IsDisposed) ? 0 : Capture.PosFrames;
 
         /// <summary>
         /// Skip frames when this camera resumes from suspension emulating a physical device.
@@ -45,14 +42,14 @@ namespace Vignette.Camera
         /// <param name="filePath">File relative to the executing application.</param>
         /// <param name="format">Image format used for encoding.</param>
         /// <param name="encodingParams">An array of parameters used for encoding.</param>
-        public CameraVirtual(string filePath, EncodingFormat format = EncodingFormat.PNG, Dictionary<ImwriteFlags, int> encodingParams = null)
+        public CameraVirtual(string filePath, EncodingFormat format = EncodingFormat.PNG, ImageEncodingParam[] encodingParams = null)
             : base(format, encodingParams)
         {
             if (!File.Exists(filePath))
                 throw new FileNotFoundException($"\"{filePath}\" is not found.");
 
             FilePath = filePath;
-            Capture = new VideoCapture(FilePath, api);
+            Capture = new VideoCapture(FilePath);
         }
 
         /// <summary>
@@ -61,7 +58,7 @@ namespace Vignette.Camera
         /// <param name="stream">A video stream.</param>
         /// <param name="format">Image format used for encoding.</param>
         /// <param name="encodingParams">An array of parameters used for encoding.</param>
-        public CameraVirtual(Stream stream, EncodingFormat format = EncodingFormat.PNG, Dictionary<ImwriteFlags, int> encodingParams = null)
+        public CameraVirtual(Stream stream, EncodingFormat format = EncodingFormat.PNG, ImageEncodingParam[] encodingParams = null)
             : base(format, encodingParams)
         {
             if (stream == null)
@@ -72,7 +69,7 @@ namespace Vignette.Camera
             using (var file = File.Create(FilePath))
                 stream.CopyTo(file);
 
-            Capture = new VideoCapture(FilePath, api);
+            Capture = new VideoCapture(FilePath);
             hasTempFile = true;
         }
 
@@ -93,7 +90,7 @@ namespace Vignette.Camera
             Pause();
 
             lock (Capture)
-                Capture.Set(CapProp.PosFrames, frame);
+                Capture.PosFrames = frame;
 
             if (!wasPaused)
                 Resume();
@@ -136,7 +133,7 @@ namespace Vignette.Camera
 
             if (Loop)
             {
-                if (Position >= FrameCount - 20)
+                if (Position >= FrameCount - 2)
                 {
                     Seek(0);
                     Resume();
@@ -144,7 +141,7 @@ namespace Vignette.Camera
             }
             else
             {
-                if (Position >= FrameCount - 20)
+                if (Position >= FrameCount - 2)
                     Pause();
             }
         }
@@ -159,8 +156,5 @@ namespace Vignette.Camera
             if (hasTempFile)
                 File.Delete(FilePath);
         }
-
-        // VideoCapture does not release resources when DirectShow API is used. See: https://github.com/emgucv/emgucv/issues/555
-        private static VideoCapture.API api => RuntimeInfo.OS == RuntimeInfo.Platform.Windows ? VideoCapture.API.Msmf : VideoCapture.API.Any;
     }
 }

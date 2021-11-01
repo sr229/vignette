@@ -1,10 +1,8 @@
 ﻿// Copyright 2020 - 2021 Vignette Project
 // Licensed under MIT. See LICENSE for details.
 
-using System.Collections.Generic;
-using System.Drawing;
-using Emgu.CV;
-using Emgu.CV.CvEnum;
+using System;
+using OpenCvSharp;
 
 namespace Vignette.Camera
 {
@@ -14,73 +12,101 @@ namespace Vignette.Camera
         /// <summary>
         /// Gets or sets the device's saturation setting. Changes are only visible if your device supports it.
         /// </summary>
-        public double Saturation
+        public float Saturation
         {
-            get => Capture.Get(CapProp.Saturation);
-            set => Capture.Set(CapProp.Saturation, value);
+            get => (float)Capture.Saturation;
+            set => Capture.Saturation = value;
         }
 
         /// <summary>
         /// Gets or sets the device's contrast setting. Changes are only visible if your device supports it.
         /// </summary>
-        public double Contrast
+        public float Contrast
         {
-            get => Capture.Get(CapProp.Contrast);
-            set => Capture.Set(CapProp.Contrast, value);
+            get => (float)Capture.Contrast;
+            set => Capture.Contrast = value;
         }
 
         /// <summary>
         /// Gets or sets the device's exposure setting. Changes are only visible if your device supports it.
         /// </summary>
-        public double Exposure
+        public float Exposure
         {
-            get => Capture.Get(CapProp.Exposure);
-            set => Capture.Set(CapProp.Exposure, value);
+            get => (float)Capture.Exposure;
+            set => Capture.Exposure = value;
         }
 
         /// <summary>
         /// Gets or sets the device's gain setting. Changes are only visible if your device supports it.
         /// </summary>
-        public double Gain
+        public float Gain
         {
-            get => Capture.Get(CapProp.Gain);
-            set => Capture.Set(CapProp.Gain, value);
+            get => (float)Capture.Gain;
+            set => Capture.Gain = value;
         }
 
         /// <summary>
         /// Gets or sets the device's hue setting. Changes are only visible if your device supports it.
         /// </summary>
-        public double Hue
+        public float Hue
         {
-            get => Capture.Get(CapProp.Hue);
-            set => Capture.Set(CapProp.Hue, value);
+            get => (float)Capture.Hue;
+            set => Capture.Hue = value;
         }
 
+        private int focus;
+
         /// <summary>
-        /// Gets or sets the device's focus setting. Changes are only visible if your device supports it.
+        /// Gets or sets the device's focus setting in percentage (0% - 100%). Changes are only visible if your device supports it.
         /// </summary>
-        public double Focus
+        public int Focus
         {
-            get => Capture.Get(CapProp.Focus);
-            set => Capture.Set(CapProp.Focus, value);
+            get => focus;
+            set
+            {
+                if (value == focus)
+                    return;
+
+                if (focus > 100 || focus < 0)
+                    throw new ArgumentException($"{nameof(value)} must be between 0 to 100.");
+
+                focus = value;
+
+                // See: https://stackoverflow.com/a/42819965
+                const int max = 51;
+                const int inc = 5;
+
+                Capture.Focus = Math.Floor((double)(max * (focus / 100))) * inc;
+            }
         }
+
+        private bool autoExposure;
 
         /// <summary>
         /// Gets or sets the device's auto exposure setting. Changes are only visible if your device supports it.
         /// </summary>
-        public double AutoExposure
+        public bool AutoExposure
         {
-            get => Capture.Get(CapProp.AutoExposure);
-            set => Capture.Set(CapProp.AutoExposure, value);
+            get => autoExposure;
+            set
+            {
+                if (value == autoExposure)
+                    return;
+
+                autoExposure = value;
+
+                // See: https://github.com/opencv/opencv/issues/9738#issuecomment-447388754
+                Capture.AutoExposure = autoExposure ? 0.25 : 0.75;
+            }
         }
 
         /// <summary>
         /// Gets or sets the device's auto focus setting. Changes are only visible if your device supports it.
         /// </summary>
-        public double AutoFocus
+        public bool AutoFocus
         {
-            get => Capture.Get(CapProp.Autofocus);
-            set => Capture.Set(CapProp.Autofocus, value);
+            get => Capture.AutoFocus;
+            set => Capture.AutoFocus = value;
         }
 
         private VideoWriter writer;
@@ -91,7 +117,7 @@ namespace Vignette.Camera
         /// <param name="cameraId">The camera's numeric identifier.</param>
         /// <param name="format">Image format used for encoding.</param>
         /// <param name="encodingParams">An array of parameters used for encoding.</param>
-        public CameraDevice(int cameraId, EncodingFormat format = EncodingFormat.PNG, Dictionary<ImwriteFlags, int> encodingParams = null)
+        public CameraDevice(int cameraId, EncodingFormat format = EncodingFormat.PNG, ImageEncodingParam[] encodingParams = null)
             : base(format, encodingParams)
         {
             Capture = new VideoCapture(cameraId);
@@ -107,7 +133,7 @@ namespace Vignette.Camera
             if (writer != null)
                 return false;
 
-            writer = new VideoWriter(path, (int)FramesPerSecond, new Size(Size.X, Size.Y), true);
+            writer = new VideoWriter(path, -1, FramesPerSecond, new Size(Size.X, Size.Y));
 
             return true;
         }
@@ -121,8 +147,10 @@ namespace Vignette.Camera
             if (writer == null)
                 return false;
 
+            writer.Release();
             writer.Dispose();
             writer = null;
+
             return true;
         }
 

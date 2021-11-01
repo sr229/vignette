@@ -9,7 +9,7 @@ using Vignette.Camera.Graphics;
 
 namespace Vignette.Camera.Tests.Visual
 {
-    [Ignore("This test cannot be run in headless mode (a physical camera device is required).")]
+    [Ignore("This test cannot be run in headless mode (a physical device is required).")]
     public class TestSceneDrawableCameraDevice : TestScene
     {
         private CameraDevice camera;

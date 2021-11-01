@@ -35,20 +35,37 @@ namespace Vignette.Camera.Platform
         public readonly Bindable<string> Current = new Bindable<string>();
 
         private CameraInfo current;
+
         private ImmutableList<CameraInfo> devices = ImmutableList<CameraInfo>.Empty;
+
         private ImmutableList<string> deviceNames = ImmutableList<string>.Empty;
+
         private readonly CameraInfoComparer cameraInfoComparer = new CameraInfoComparer();
-        private readonly Scheduler scheduler;
-        private readonly ScheduledDelegate scheduled;
+
+        private Scheduler scheduler;
+
+        private readonly CancellationTokenSource cancellationToken = new CancellationTokenSource();
 
         public CameraManager(Scheduler scheduler)
         {
             this.scheduler = scheduler;
-            
+
             Current.ValueChanged += onDeviceChanged;
 
-            scheduled = scheduler.AddDelayed(() => syncCameraDevices(), 1000, true);
-            syncCameraDevices();
+            scheduler.Add(() =>
+            {
+                new Thread(() =>
+                {
+                    while (!cancellationToken.IsCancellationRequested)
+                    {
+                        syncCameraDevices();
+                        Thread.Sleep(1000);
+                    }
+                })
+                {
+                    IsBackground = true,
+                }.Start();
+            });
         }
 
         public static CameraManager CreateSuitableManager(Scheduler scheduler)
@@ -103,7 +120,7 @@ namespace Vignette.Camera.Platform
             scheduler.Add(() =>
             {
                 var device = devices.FirstOrDefault(d => d.Name == args.NewValue);
-                if (devices.Count > 0  && !devices.Contains(device))
+                if (!devices.Contains(device))
                     current = devices.Last();
             });
         }
@@ -126,7 +143,8 @@ namespace Vignette.Camera.Platform
 
             if (disposing)
             {
-                scheduled.Cancel();
+                cancellationToken.Cancel();
+
                 OnNewDevice = null;
                 OnLostDevice = null;
             }

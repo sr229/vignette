@@ -11,8 +11,8 @@
 
   <ItemGroup>
     <PackageReference Include="DirectShowLib.Standard" Version="2.1.0" />
-    <PackageReference Include="Emgu.CV" Version="4.5.3.4721" />
-    <PackageReference Include="ppy.osu.Framework" Version="2021.907.0" PrivateAssets="True" />
+    <PackageReference Include="OpenCvSharp4" Version="4.5.3.20210725" />
+    <PackageReference Include="ppy.osu.Framework" Version="2021.728.0" PrivateAssets="True" />
   </ItemGroup>
 
 </Project>

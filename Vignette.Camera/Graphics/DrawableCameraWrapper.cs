@@ -2,24 +2,20 @@
 // Licensed under MIT. See LICENSE for details.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using osu.Framework.Graphics;
 using osu.Framework.Graphics.Containers;
-using osu.Framework.Graphics.Primitives;
 using osu.Framework.Graphics.Sprites;
 using osu.Framework.Graphics.Textures;
 using osu.Framework.Threading;
 
 namespace Vignette.Camera.Graphics
 {
-    public abstract class DrawableCameraWrapper<T> : CompositeDrawable, ICamera
-        where T : Camera, ICamera
+    public abstract class DrawableCameraWrapper : CompositeDrawable, ICamera
     {
         public double FramesPerSecond => Camera.FramesPerSecond;
 
-        public IReadOnlyList<byte> Data => Camera.Data;
+        public byte[] Data => Camera.Data;
 
         public bool Paused => Camera.Paused;
 
@@ -29,13 +25,7 @@ namespace Vignette.Camera.Graphics
 
         public bool Ready => Camera.Ready;
 
-        int ICamera.Width => Camera.Width;
-
-        int ICamera.Height => Camera.Height;
-
-        Vector2I ICamera.Size => Camera.Size;
-
-        protected readonly T Camera;
+        protected readonly Camera Camera;
 
         private ScheduledDelegate scheduled;
 
@@ -48,7 +38,7 @@ namespace Vignette.Camera.Graphics
             AddInternal(content);
         }
 
-        protected DrawableCameraWrapper(T camera, bool disposeUnderlyingCameraOnDispose = true)
+        protected DrawableCameraWrapper(Camera camera, bool disposeUnderlyingCameraOnDispose = true)
         {
             Camera = camera ?? throw new ArgumentNullException(nameof(camera));
             this.disposeUnderlyingCameraOnDispose = disposeUnderlyingCameraOnDispose;
@@ -66,10 +56,7 @@ namespace Vignette.Camera.Graphics
                 scheduled?.Cancel();
                 scheduled = Schedule(() =>
                 {
-                    if (camera.Data == null)
-                        return;
-
-                    using var memory = new MemoryStream(camera.Data.ToArray());
+                    using var memory = new MemoryStream(camera.Data);
                     sprite.Texture = Texture.FromStream(memory);
                 });
             };
@@ -81,7 +68,7 @@ namespace Vignette.Camera.Graphics
 
         public void Start() => Camera.Start();
 
-        public void Stop() => Camera.Stop();
+        public void Stop(bool waitForDecoder) => Camera.Stop(waitForDecoder);
 
         protected override void Dispose(bool isDisposing)
         {

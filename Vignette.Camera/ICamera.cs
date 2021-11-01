@@ -1,8 +1,7 @@
 ﻿// Copyright 2020 - 2021 Vignette Project
 // Licensed under MIT. See LICENSE for details.
 
-using System.Collections.Generic;
-using osu.Framework.Graphics.Primitives;
+using osuTK;
 
 namespace Vignette.Camera
 {
@@ -14,17 +13,17 @@ namespace Vignette.Camera
         /// <summary>
         /// The output image width.
         /// </summary>
-        public int Width { get; }
+        public float Width { get; }
 
         /// <summary>
         /// The output image height.
         /// </summary>
-        public int Height { get; }
+        public float Height { get; }
 
         /// <summary>
         /// The output image size.
         /// </summary>
-        public Vector2I Size { get; }
+        public Vector2 Size { get; }
 
         /// <summary>
         /// The frequency of frames outputted by the device in seconds.
@@ -34,7 +33,7 @@ namespace Vignette.Camera
         /// <summary>
         /// The data output from the capture device.
         /// </summary>
-        public IReadOnlyList<byte> Data { get; }
+        public byte[] Data { get; }
 
         /// <summary>
         /// The paused state of this <see cref="ICamera"/>.
@@ -74,6 +73,7 @@ namespace Vignette.Camera
         /// <summary>
         /// Ends the decoding process for this camera and cleans up resources.
         /// </summary>
-        void Stop();
+        /// <param name="waitForDecoder">Wait for the last tick to finish before proceeding to cleanup.</param>
+        void Stop(bool waitForDecoder);
     }
 }
