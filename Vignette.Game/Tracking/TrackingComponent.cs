@@ -84,7 +84,7 @@ namespace Vignette.Game.Tracking
                 foreach (var landmark in landmarks)
                     faces.Add(new FaceData(landmark));
             }
-
+            packet.Dispose();
             return Status.Ok();
         }
 
@@ -138,6 +138,7 @@ namespace Vignette.Game.Tracking
             OutputFrameHeight = frame.Height();
             OutputFrameWidthStep = frame.WidthStep();
             OutputFrame = frame.CopyToByteBuffer(OutputFrameHeight * OutputFrameWidthStep);
+            packet.Dispose();
         }
 
         protected override void Dispose(bool isDisposing)
