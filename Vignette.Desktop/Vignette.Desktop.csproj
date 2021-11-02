@@ -17,6 +17,29 @@
     <AssemblyName>Vignette</AssemblyName>
   </PropertyGroup>
 
+  <PropertyGroup Label="Post-build task">
+    <PostBuildEvent Condition=" '$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))' ">
+      if [ -d "$(MSBuildProjectDirectory)/bin/$(Configuration)/$(TargetFramework)/ubuntu.20.04-x64" ]; then
+        cp "$(MSBuildProjectDirectory)/runtimes/linux-x64/native/"* "$(MSBuildProjectDirectory)/bin/$(Configuration)/$(TargetFramework)/ubuntu.20.04-x64/"
+        echo "Copied Live2DCubism native library"
+      else
+        echo "Error: on Linux, you have to build Vignette.Desktop with the ubuntu.20.04-x64 RID (regardless of your distribution)."
+        echo "Try the following command: dotnet build -r ubuntu.20.04-x64"
+        exit 1
+      fi
+    </PostBuildEvent>
+    <PostBuildEvent Condition=" '$(OS)' == 'Windows_NT' ">
+      if exist $(MSBuildProjectDirectory)\bin\$(Configuration)\$(TargetFramework)\win-x64 (
+        cp $(MSBuildProjectDirectory)\runtimes\win-x64\native\* $(MSBuildProjectDirectory)/bin/$(Configuration)/$(TargetFramework)/win-x64/
+        echo "Copied Live2DCubism native library"
+      ) else (
+        echo "Error: on Windows, you have to build Vignette.Desktop with the win-x64 RID."
+        echo "Try the following command: dotnet build -r win-x64"
+        exit /b 1
+      )
+    </PostBuildEvent>
+  </PropertyGroup>
+
   <ItemGroup>
     <ContentWithTargetPath Include="MediapipeRsrc\**">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
